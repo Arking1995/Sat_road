@@ -16,6 +16,57 @@ vec_length = {
 }
 
 
+directP_dict = {(0,'north'),(1,'south'),(2,'east'),(3,'west')}
+
+
+def get_Block_azumith(loaded_road):
+    x_rd, y_rd = loaded_road.exterior.xy
+    x = x_rd[:-1]
+    y = y_rd[:-1]
+    length = len(x)
+    miny_id = np.argmin(y)
+    pre_miny_id = miny_id - 1
+    if pre_miny_id < 0:
+        pre_miny_id = length - 1
+
+    dx = np.fabs(x[pre_miny_id] - x[miny_id])
+    dy = y[pre_miny_id] - y[miny_id]
+
+    azumith = np.arctan(np.float(dy) / np.float(dx))
+
+    return azumith
+
+def Ecu_dis(x1, y1, x2, y2):
+    return np.sqrt( (x1-x2) * (x1-x2) + (y1-y2) * (y1-y2) )
+
+
+
+def get_RoadAccess_EdgeType(tmp_line, tmp_bldg_centroid):
+    if tmp_line.coords[0][0] > tmp_bldg_centroid.x and tmp_line.coords[1][0] > tmp_bldg_centroid.x:
+        return 0.0, 2
+    if tmp_line.coords[0][0] < tmp_bldg_centroid.x and tmp_line.coords[1][0] < tmp_bldg_centroid.x:
+        return np.pi, 3
+    if tmp_line.coords[0][1] > tmp_bldg_centroid.y and tmp_line.coords[1][1] > tmp_bldg_centroid.y:
+        return 0.5 * np.pi, 0
+    if tmp_line.coords[0][1] < tmp_bldg_centroid.y and tmp_line.coords[1][1] < tmp_bldg_centroid.y:
+        return 1.5 * np.pi, 1
+
+def get_BldgRela_EdgeType(strat_bldg_centroid, target_bldg_centroid):
+    azumith = included_angle(strat_bldg_centroid.x - 10.0, strat_bldg_centroid.y, strat_bldg_centroid.x, strat_bldg_centroid.y, target_bldg_centroid.x, target_bldg_centroid.y)
+
+    if (azumith >= (7.0 / 4.0) * np.pi and azumith < 2 * np.pi) or (azumith >= 0 and azumith < np.pi / 4.0):
+        return azumith, 3
+    elif azumith >= (1.0 / 4.0) * np.pi and azumith < (3.0 / 4.0) * np.pi:
+        return azumith, 0
+    elif azumith >= (3.0 / 4.0) * np.pi and azumith < (5.0 / 4.0) * np.pi:
+        return azumith, 2
+    elif azumith >= (5.0 / 4.0) * np.pi and azumith < (7.0 / 4.0) * np.pi:
+        return azumith, 1
+    else:
+        print("Nonvalid get_BldgRela_EdgeType")
+        return azumith, None
+
+
 def included_angle(x1, y1, x2, y2, x3, y3):
     dx1 = x1-x2
     dx2 = x3-x2
@@ -24,7 +75,7 @@ def included_angle(x1, y1, x2, y2, x3, y3):
 
     cos1 = dx1 * dx2 + dy1 * dy2
     distance = np.sqrt(dx1**2 + dy1**2) * np.sqrt(dx2**2 + dy2**2)
-    angle = np.arccos(cos1 / distance)
+    angle = np.arccos(cos1 / (distance + 1e-6))
 
     return angle
 
@@ -47,7 +98,7 @@ def make_obj(id):
 
 
 
-def rotate(x0, y0, centerx, centery, theta):
+def rotate(x0, y0, centerx, centery, theta): #clockwise
     x = (x0 - centerx) * math.cos(theta) - (y0 - centery) * math.sin(theta) + centerx
     y = (x0 - centerx) * math.sin(theta) + (y0 - centery) * math.cos(theta) + centery
     return x, y

@@ -99,7 +99,7 @@ def fit_bldg_features(img_data):
     IoU_list = np.zeros(1)
     rec_para_result = []
     best_fit = []
-    IoU_thres = 0.05
+    IoU_thres = 0.01
 
     #################################################   rectangle  fit  #########################################################################################
     fit_rec = []
@@ -156,8 +156,7 @@ def fit_bldg_features(img_data):
 
     ################################   cross  fit   ###########################################################################################################
     count = 0
-    IoU_thres = 0.05
-    Nonperfectrec_idx = np.array(np.where(IoU_list < 0.95)).reshape(-1)
+    Nonperfectrec_idx = np.array(np.where(IoU_list < (1.0 - IoU_thres))).reshape(-1)
     Crs_IoU_list = np.zeros(Nonperfectrec_idx.shape)
     for id in Nonperfectrec_idx:
         fit_crs = []
@@ -244,8 +243,7 @@ def fit_bldg_features(img_data):
 
     ###############################   L-shape  fit   ############################################################################################################
     count = 0
-    IoU_thres = 0.05
-    Nonperfectcrs_idx = Nonperfectrec_idx[np.array(np.where(Crs_IoU_list < 0.95)).reshape(-1)]
+    Nonperfectcrs_idx = Nonperfectrec_idx[np.array(np.where(Crs_IoU_list < (1.0 - IoU_thres))).reshape(-1)]
     Lshape_IoU_list = np.zeros(Nonperfectcrs_idx.shape)
     for id in Nonperfectcrs_idx:
         fit_lshape = []
@@ -316,8 +314,7 @@ def fit_bldg_features(img_data):
 
     ###############################   ushape  fit   ############################################################################################################
     count = 0
-    IoU_thres = 0.05
-    Nonperfect_lshape_idx = Nonperfectcrs_idx[np.array(np.where(Lshape_IoU_list < 0.95)).reshape(-1)]
+    Nonperfect_lshape_idx = Nonperfectcrs_idx[np.array(np.where(Lshape_IoU_list < (1.0 - IoU_thres))).reshape(-1)]
     Ushape_IoU_list = np.zeros(Nonperfect_lshape_idx.shape)
     for id in Nonperfect_lshape_idx:
         fit_ushape = []
@@ -372,22 +369,21 @@ def fit_bldg_features(img_data):
             best_fit[id][0] = 3
 
         count += 1
-        ushape = make_ushape(fit_ushape[maxid].x)
-
-        fit_contours = np.array(ushape).reshape((8,  # number should change for more variant shapes
-                                                 1, 2)).astype(np.int
-                                                               )  # the type should be int, otherwise return "npoints > 0" error
-        fit_contours = [fit_contours]
-        fit_img = np.zeros(data.shape, np.uint8)
-        cv2.drawContours(fit_img, fit_contours, -1, (255), thickness=1)
-        cv2.imwrite('fit_img_ushape.png',fit_img)
+        # ushape = make_ushape(fit_ushape[maxid].x)
+        #
+        # fit_contours = np.array(ushape).reshape((8,  # number should change for more variant shapes
+        #                                          1, 2)).astype(np.int
+        #                                                        )  # the type should be int, otherwise return "npoints > 0" error
+        # fit_contours = [fit_contours]
+        # fit_img = np.zeros(data.shape, np.uint8)
+        # cv2.drawContours(fit_img, fit_contours, -1, (255), thickness=1)
+        # cv2.imwrite('fit_img_ushape.png',fit_img)
 
 
 
     ###############################   hole  fit   ############################################################################################################
     count = 0
-    IoU_thres = 0.05
-    Nonperfectushape_idx = Nonperfectcrs_idx[np.array(np.where(Ushape_IoU_list < 0.95)).reshape(-1)]
+    Nonperfectushape_idx = Nonperfectcrs_idx[np.array(np.where(Ushape_IoU_list < (1-IoU_thres))).reshape(-1)]
     Hole_IoU_list = np.zeros(Nonperfectushape_idx.shape)
     for id in Nonperfectushape_idx:
         fit_hole = []
