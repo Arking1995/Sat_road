@@ -11,7 +11,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import cv2
 import shapely.geometry as sg
 import shapely.affinity as sa
-from utils import included_angle, get_Block_azumith, get_RoadAccess_EdgeType, get_BldgRela_EdgeType, Ecu_dis
+from utils import included_angle, get_Block_azumith, get_RoadAccess_EdgeType, get_BldgRela_EdgeType, Ecu_dis, generate_RoadAccess_EdgeType
 
 
 
@@ -23,8 +23,11 @@ bldg_rela_threshold = 10.0
 
 if __name__ == "__main__":
 
+    # fp = 'D:\\Sat_road\\chicago_set_raw'
+    # save_fp = 'D:\\Sat_road\\chicago_dataset'
+
     fp = 'D:\\Sat_road\\result_newtest\\testblk_cv_chicago_drive'
-    save_fp = 'D:\\Sat_road\\chicago_test_dataset'
+    save_fp = 'D:\\Sat_road\\chicago_trivial_dataset'
 
     idx_list = []
     rx = re.compile(r"blk_bldg_*")
@@ -33,7 +36,6 @@ if __name__ == "__main__":
             res = re.match(rx, file)
             if res:
                 idx_list.append(file[9:])
-
 
 
     if not os.path.exists(fp):
@@ -59,12 +61,12 @@ if __name__ == "__main__":
 
         ################################ Generate block-level graph attributes
         offset_block = sa.translate(loaded_road, -blk_offset_x, -blk_offset_y)
+        blk_bounds = offset_block.bounds
         blk_azumith = get_Block_azumith(offset_block)
         horiz_offset_block = sa.rotate(offset_block, blk_azumith, origin = (0.0, 0.0), use_radians=True)
         blk_area = horiz_offset_block.area
 
-        G = BlockGraph(blockID= 0, offsetx = blk_offset_x , offsety = blk_offset_y, area = blk_area, azimuth = blk_azumith) # initialize the block graph
-
+        G = BlockGraph(blockID= ii, offsetx = blk_offset_x , offsety = blk_offset_y, area = blk_area, azimuth = blk_azumith) # initialize the block graph
 
         ################################ Generate road nodes
         x_rd, y_rd = horiz_offset_block.exterior.xy
@@ -83,6 +85,9 @@ if __name__ == "__main__":
             else:
                 G.add_obj_node(i, posx=curr_road.centroid.x, posy=curr_road.centroid.y, road_length = rd_length)
 
+        road_access_dict = generate_RoadAccess_EdgeType(line_list)
+        # print(road_access_dict)
+
         line_vol = len(line_list)
         ######################### Connect all road nodes
         for i in range(line_vol):
@@ -90,124 +95,136 @@ if __name__ == "__main__":
                 eu_dist = Ecu_dis(G.nodes[i]['posx'], G.nodes[i]['posy'], G.nodes[i+1]['posx'], G.nodes[i+1]['posy'])
                 tmp_angle = included_angle(x_rd[i], y_rd[i], x_rd[i + 1], y_rd[i + 1], x_rd[i + 2], y_rd[i + 2])  # the included angle of current road line with the next line
                 sum_angle += tmp_angle
-                G.add_obj_edge(i, i+1, edge_dist=eu_dist, azimuth=tmp_angle)
+                edge_azumith, edge_type = get_BldgRela_EdgeType(line_list[i].centroid,
+                                                                    line_list[i+1].centroid)
+                G.add_obj_edge(i, i+1, edge_dist=eu_dist, included_angle=tmp_angle, azimuth =edge_azumith, edge_type = edge_type)
             else:
                 eu_dist = Ecu_dis(G.nodes[i]['posx'], G.nodes[i]['posy'], G.nodes[0]['posx'], G.nodes[0]['posy'])
                 tmp_angle = 2 * np.pi - sum_angle
-                G.add_obj_edge(i, 0, edge_dist=eu_dist, azimuth=tmp_angle)
+                edge_azumith, edge_type = get_BldgRela_EdgeType(line_list[i].centroid,
+                                                                    line_list[0].centroid)
+                G.add_obj_edge(i, 0, edge_dist=eu_dist, included_angle=tmp_angle, azimuth =edge_azumith, edge_type = edge_type)
 
 
         ################################ Generate building nodes
         horiz_offset_bldg = []
         for i in range(poly_vol):
-            tmp_offset = sa.translate(loaded_polygon[i], -blk_offset_x, -blk_offset_y)
-            tmp_rot = sa.rotate(tmp_offset, blk_azumith, origin=(0.0, 0.0), use_radians=True)
-            horiz_offset_bldg.append(tmp_rot)
-            x_rd, y_rd = tmp_rot.exterior.xy
+            if loaded_polygon[i].geom_type == 'Polygon':
+                tmp_offset = sa.translate(loaded_polygon[i], -blk_offset_x, -blk_offset_y)
+                tmp_rot = sa.rotate(tmp_offset, blk_azumith, origin=(0.0, 0.0), use_radians=True)
+                horiz_offset_bldg.append(tmp_rot)
+                x_rd, y_rd = tmp_rot.exterior.xy
 
+        poly_vol_valid = len(horiz_offset_bldg)
+        for i in range(poly_vol_valid):
+            # print('processing ', str(i), 'th building.')
 
-        for i in range(poly_vol):
             curr_poly = horiz_offset_bldg[i]
 
-            x, y = curr_poly.exterior.xy
-            minx = np.amin(x)
-            miny = np.amin(y)
-            maxx = np.amax(x)
-            maxy = np.amax(y)
+            # x, y = curr_poly.exterior.xy
+            # minx = np.amin(x)
+            # miny = np.amin(y)
+            # maxx = np.amax(x)
+            # maxy = np.amax(y)
+            #
+            # x = x - minx
+            # y = y - miny
+            #
+            # width = np.float(maxx - minx) / resolution # Width of pixel in 0.3m resolution
+            # height = np.float(maxy - miny) / resolution # Height of pixel in 0.3m resolution
+            #
+            # dpi = 400
+            # w_inch = width / np.float(dpi)
+            # h_inch = height / np.float(dpi)
+            #
+            # fig = plt.figure(figsize=(w_inch, h_inch), dpi=dpi)
+            # plt.fill(x, y)
+            #
+            # ax = fig.gca()
+            # ax.axis('off')
+            # fig.tight_layout(pad=0)
+            #
+            # # To remove the huge white borders
+            # ax.margins(0)
+            #
+            # fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+            #
+            # canvas = FigureCanvas(fig)
+            # canvas.draw()
+            # img_as_string, (width, height) = canvas.print_to_buffer()
+            # as_rgba = np.frombuffer(img_as_string, dtype='uint8').reshape((height, width, 4))
+            #
+            # img = as_rgba[:, :, :3]
 
-            x = x - minx
-            y = y - miny
+            # curr_shape, iou, curr_height, curr_width, theta = fit_bldg_features(img)
+            # print(curr_shape, iou, curr_height, curr_width, theta)
 
-            width = np.float(maxx - minx) / resolution # Width of pixel in 0.3m resolution
-            height = np.float(maxy - miny) / resolution # Height of pixel in 0.3m resolution
 
-            dpi = 400
-            w_inch = width / np.float(dpi)
-            h_inch = height / np.float(dpi)
-
-            fig = plt.figure(figsize=(w_inch, h_inch), dpi=dpi)
-            plt.fill(x, y)
-
-            ax = fig.gca()
-            ax.axis('off')
-            fig.tight_layout(pad=0)
-
-            # To remove the huge white borders
-            ax.margins(0)
-
-            fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
-
-            canvas = FigureCanvas(fig)
-            canvas.draw()
-            img_as_string, (width, height) = canvas.print_to_buffer()
-            as_rgba = np.frombuffer(img_as_string, dtype='uint8').reshape((height, width, 4))
-
-            img = as_rgba[:, :, :3]
-
-            curr_shape, iou, curr_height, curr_width, theta = fit_bldg_features(img)
-            print(curr_shape, iou, curr_height, curr_width, theta)
-            ax.cla()
-            plt.close()
-            # shape, height, width, theta from fitting function
+            # ax.cla()
+            # plt.close()
+            # # shape, height, width, theta from fitting function
 
             curr_area = curr_poly.area
             curr_posx = curr_poly.centroid.x
             curr_posy = curr_poly.centroid.y
 
-            curr_height = curr_height * resolution # define that length should be larger than width
-            curr_width = curr_width * resolution
+            # curr_height = curr_height * resolution # define that length should be larger than width
+            # curr_width = curr_width * resolution
 
-            curr_hor = curr_width
-            curr_ver = curr_height
-            curr_azimuth = theta % (2 * np.pi)  # counter-clockwise (theta in fitting) transfer to clockwise
-            #
-            # if curr_height <= curr_width:
-            #     curr_length = curr_width
-            #     curr_shortlength = curr_height
-            #     curr_azimuth = (1 - theta) % (2*np.pi) # counter-clockwise (theta in fitting) transfer to clockwise
-            # else:
-            #     curr_length = curr_height
-            #     curr_shortlength = curr_width
-            #     curr_azimuth = (1 - theta - 0.5 * np.pi) % (2*np.pi)   # counter-clockwise (theta in fitting) transfer to clockwise
+            # curr_hor = curr_width
+            # curr_ver = curr_height
+            # curr_azimuth = theta % (2 * np.pi)  # counter-clockwise (theta in fitting) transfer to clockwise
+            # print(curr_shape, iou, curr_area, curr_posx, curr_posy, curr_hor, curr_ver, curr_azimuth)
 
+            # G.add_obj_node(i + 4, azimuth=curr_azimuth, posx=curr_posx, posy=curr_posy,
+            #                 bldg_hor=curr_hor, bldg_ver=curr_ver, bldg_shape=curr_shape, bldg_area=curr_area)
 
-            print(curr_shape, iou, curr_area, curr_posx, curr_posy, curr_hor, curr_ver, curr_azimuth)
-            G.add_obj_node(i + 4, azimuth=curr_azimuth, posx=curr_posx, posy=curr_posy,
-                            bldg_hor=curr_hor, bldg_ver=curr_ver, bldg_shape=curr_shape, bldg_area=curr_area)
+            G.add_obj_node(i + 4, posx=curr_posx, posy=curr_posy, bldg_area=curr_area)
 
 
 
 
 
         ####### link edges of all road access bldgs
-        for j in range(poly_vol):
+        for j in range(poly_vol_valid):
             tmp_bldg = horiz_offset_bldg[j]
             distance_list = []
-            for i in range(len(line_list)):
+            for i in range(line_vol):
                 tmp_dist = line_list[i].distance(tmp_bldg)
                 distance_list.append(tmp_dist)
                 if (tmp_dist < road_access_threshold):
-                    rd_azumith, rd_edgetype = get_RoadAccess_EdgeType(line_list[i], tmp_bldg.centroid)
+                    tmp_direct = list(road_access_dict.keys())[list(road_access_dict.values()).index(i)]
+                    rd_azumith, rd_edgetype = get_RoadAccess_EdgeType(tmp_direct)
                     G.add_obj_edge(i, j + 4, edge_dist=tmp_dist, azimuth=rd_azumith, edge_type=rd_edgetype)
 
             dist_arr = np.array(distance_list)
             minid = np.argmin(dist_arr)
 
             if (dist_arr[minid] >= road_access_threshold): # initially any bldg node should have at least 1 road access
-                rd_azumith, rd_edgetype = get_RoadAccess_EdgeType(line_list[minid], tmp_bldg.centroid)
+                tmp_direct = list(road_access_dict.keys())[list(road_access_dict.values()).index(i)]
+                rd_azumith, rd_edgetype = get_RoadAccess_EdgeType(tmp_direct)
                 G.add_obj_edge(minid, j + 4, edge_dist=dist_arr[minid], edge_type=rd_edgetype)
                 # a point distance to a line, should always be vertical, orientation will be used by edges between buildings
                 # north, south, west, east. edge_type defined by global directP_dict{}
 
-        for i in range(poly_vol):
-            for j in np.arange(i+1, poly_vol):
+        for i in range(poly_vol_valid):
+            for j in np.arange(i+1, poly_vol_valid):
                 tmp_dist = horiz_offset_bldg[i].centroid.distance(horiz_offset_bldg[j].centroid)
                 if tmp_dist < bldg_rela_threshold:
                     bldg_azumith, bldg_edgetype = get_BldgRela_EdgeType(horiz_offset_bldg[i].centroid, horiz_offset_bldg[j].centroid)
                     G.add_obj_edge(i + 4, j + 4, edge_dist=tmp_dist, azimuth =bldg_azumith, edge_type = bldg_edgetype)
 
-
+        print(G)
         nx.write_gpickle(G, os.path.join(save_fp, idx_list[ii] +".gpickle"))
+
+
+
+
+
+
+
+
+
 
 
 

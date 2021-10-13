@@ -25,7 +25,7 @@ def fit_bldg_features(img_data):
 
     contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
-    print('Find contour: ',len(contours))
+    # print('Find contour: ',len(contours))
 
 
     Shift = np.zeros((int(len(contours)),2))
@@ -140,7 +140,7 @@ def fit_bldg_features(img_data):
     maxid = np.argmax(IoU_rec)
 
     IoU_list[count] = IoU_rec[maxid]
-    print('Rec IoU:' + str(IoU_rec[maxid]))
+    # print('Rec IoU:' + str(IoU_rec[maxid]))
     rectangle = make_rectangle(fit_rec[maxid].x)
     rec_para_result.append(fit_rec[maxid].x)  # legacy for further cross matching
     best_fit.append([0, fit_rec[maxid]])
@@ -218,7 +218,7 @@ def fit_bldg_features(img_data):
 
         IoU_crs = np.array(IoU_crs).reshape(-1)
         maxid = np.argmax(IoU_crs)
-        print('Crs IoU:' + str(IoU_crs[maxid]))
+        # print('Crs IoU:' + str(IoU_crs[maxid]))
 
         Crs_IoU_list[count] = IoU_crs[maxid]
 
@@ -291,7 +291,7 @@ def fit_bldg_features(img_data):
 
         Lshape_IoU_list[count] = IoU_lshape[maxid]
 
-        print('L-shape IoU:' + str(IoU_lshape[maxid]))
+        # print('L-shape IoU:' + str(IoU_lshape[maxid]))
 
         if 1 - best_fit[id][1].fun < IoU_lshape[maxid]:
             best_fit[id][1] = fit_lshape[maxid]
@@ -362,7 +362,7 @@ def fit_bldg_features(img_data):
 
         Ushape_IoU_list[count] = IoU_ushape[maxid]
 
-        print('U-shape IoU:' + str(IoU_ushape[maxid]))
+        # print('U-shape IoU:' + str(IoU_ushape[maxid]))
 
         if 1 - best_fit[id][1].fun < IoU_ushape[maxid]:
             best_fit[id][1] = fit_ushape[maxid]
@@ -408,7 +408,7 @@ def fit_bldg_features(img_data):
         maxid = np.argmax(IoU_hole)
 
         Hole_IoU_list[count] = IoU_hole[maxid]
-        print('Hole IoU:' + str(IoU_hole[maxid]))
+        # print('Hole IoU:' + str(IoU_hole[maxid]))
 
         if 1 - best_fit[id][1].fun < IoU_hole[maxid]:
             best_fit[id][1] = fit_hole[maxid]

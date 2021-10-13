@@ -16,7 +16,7 @@ vec_length = {
 }
 
 
-directP_dict = {(0,'north'),(1,'south'),(2,'east'),(3,'west')}
+directP_dict = {'north': 0, 'south': 1, 'east': 2,'west': 3}
 
 
 def get_Block_azumith(loaded_road):
@@ -41,15 +41,64 @@ def Ecu_dis(x1, y1, x2, y2):
 
 
 
-def get_RoadAccess_EdgeType(tmp_line, tmp_bldg_centroid):
-    if tmp_line.coords[0][0] > tmp_bldg_centroid.x and tmp_line.coords[1][0] > tmp_bldg_centroid.x:
-        return 0.0, 2
-    if tmp_line.coords[0][0] < tmp_bldg_centroid.x and tmp_line.coords[1][0] < tmp_bldg_centroid.x:
-        return np.pi, 3
-    if tmp_line.coords[0][1] > tmp_bldg_centroid.y and tmp_line.coords[1][1] > tmp_bldg_centroid.y:
-        return 0.5 * np.pi, 0
-    if tmp_line.coords[0][1] < tmp_bldg_centroid.y and tmp_line.coords[1][1] < tmp_bldg_centroid.y:
-        return 1.5 * np.pi, 1
+def generate_RoadAccess_EdgeType(line_list):
+    dict = {}
+
+    line_vol = len(line_list)
+    tmp = []
+    tmp_idx = -1
+
+    for i in range(line_vol):
+        meany = line_list[i].coords[0][1] + line_list[i].coords[1][1]
+        dy = line_list[i].coords[0][1] - line_list[i].coords[1][1]
+        if np.fabs(dy) < 1:
+            if meany > 0:
+                dict['north'] = i
+            else:
+                dict['south'] = i
+            continue
+
+    for i in range(line_vol):
+        dy = line_list[i].coords[0][1] - line_list[i].coords[1][1]
+        if np.fabs(dy) > 1:
+            if not tmp:
+                meanx = line_list[i].coords[0][0] + line_list[i].coords[1][0]
+                tmp.append(meanx)
+                tmp_idx = i
+            else:
+                meanx = line_list[i].coords[0][0] + line_list[i].coords[1][0]
+                if meanx > tmp[0]:
+                    dict['west'] = tmp_idx
+                    dict['east'] = i
+                else:
+                    dict['west'] = i
+                    dict['east'] = tmp_idx
+
+    return dict
+
+
+
+# def get_RoadAccess_EdgeType(tmp_line, tmp_bldg_centroid):
+#     if tmp_line.coords[0][0] >= tmp_bldg_centroid.x and tmp_line.coords[1][0] >= tmp_bldg_centroid.x:
+#         return 0.0, 2
+#     if tmp_line.coords[0][0] <= tmp_bldg_centroid.x and tmp_line.coords[1][0] <= tmp_bldg_centroid.x:
+#         return np.pi, 3
+#     if tmp_line.coords[0][1] >= tmp_bldg_centroid.y and tmp_line.coords[1][1] >= tmp_bldg_centroid.y:
+#         return 0.5 * np.pi, 0
+#     if tmp_line.coords[0][1] <= tmp_bldg_centroid.y and tmp_line.coords[1][1] <= tmp_bldg_centroid.y:
+#         return 1.5 * np.pi, 1
+#     print("none_type")
+
+def get_RoadAccess_EdgeType(direction):
+    if direction == 'north':
+        return 0.5 * np.pi, directP_dict['north']
+    elif direction == 'south':
+        return 1.5 * np.pi, directP_dict['south']
+    elif direction == 'east':
+        return 0.0, directP_dict['east']
+    else:
+        return np.pi, directP_dict['west']
+
 
 def get_BldgRela_EdgeType(strat_bldg_centroid, target_bldg_centroid):
     azumith = included_angle(strat_bldg_centroid.x - 10.0, strat_bldg_centroid.y, strat_bldg_centroid.x, strat_bldg_centroid.y, target_bldg_centroid.x, target_bldg_centroid.y)

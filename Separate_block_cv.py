@@ -38,26 +38,38 @@ def plot2img(fig):
     return as_rgba[:,:,:3]
 
 
+bbx = [ [41.9058124, 41.8241064, -87.6209515, -87.7285386],
+        [30.2985978, 30.2165930, -97.6955337, -97.7899633],
+        [47.5244795, 47.4576584, -122.5890458, -122.7082366],
+        [47.5783890, 47.5516808, -122.6275684, -122.6879689],
+        [48.2386057, 48.1580527, 16.4240489, 16.3034633] ]
 
 
 colsize = 30
 rowsize = 30
 
-point = (41.8241064, -87.6209515)
-# point = (45.517309, -122.682138)
-dist = 612
-fp = 'D:\\Sat_road\\result_newtest\\testblk_cv_chicago_drive'
+# point = (41.8241064, -87.6209515)
+# dist = 612
+
+fp = 'D:\\Sat_road\\chicago_set_raw'
 if not os.path.exists(fp):
     os.mkdir(fp)
 
 tags = {"building": True}
 
-G = ox.graph_from_point(point, dist=dist, network_type='drive')
+
+cityname = ['chicago', 'austin', 'kitsap1', 'kitsap2', 'vienna']    #'chicago', 'austin', 'kitsap', 'vienna'
+h = 1
+G = ox.graph_from_bbox(bbx[h][0], bbx[h][1], bbx[h][2], bbx[h][3], network_type='drive')
+
+# G = ox.graph_from_point(point, dist=dist, network_type='drive')
 G_projected = ox.project_graph(G)
 H = k_core(G, 2)
 fig1, ax1 = ox.plot_graph(H, node_size=0, bgcolor='#ffffff',  edge_color='#000000', edge_linewidth=1, figsize = (colsize, rowsize),save=True, show=False, close=True)
 
-all_footprints = ox.geometries_from_point(point, tags, dist=dist)
+# all_footprints = ox.geometries_from_point(point, tags, dist=dist)
+all_footprints = ox.geometries_from_bbox(bbx[h][0], bbx[h][1], bbx[h][2], bbx[h][3], tags)
+
 # all_footprints = ox.project_gdf(all_footprints)
 ft_size = all_footprints.shape[0]
 all_footprints['index_col'] = range(ft_size) #add a column for indexing
@@ -87,7 +99,7 @@ for ii in np.unique(label_image.ravel()):
 
     print('idx: ', ii)
     mask = (label_image[:,:,0] == ii)
-    cv2.imwrite(os.path.join(fp,'image_'+str(ii)+'.png'),mask.astype(np.uint8) * 255.0)
+    # cv2.imwrite(os.path.join(fp,'image_'+str(ii)+'.png'),mask.astype(np.uint8) * 255.0)
 
     contours = find_contours(mask.astype(np.float64), 0.5)
     # Select the largest contiguous contour
@@ -143,19 +155,15 @@ for ii in np.unique(label_image.ravel()):
 
         with open(os.path.join(fp,'blk_road_'+str(ii)), "wb") as poly_file:
             obb_blk = ox.projection.project_geometry(obb_blk)[0]
-            print(obb_blk)
+            # print(obb_blk)
             pickle.dump(obb_blk, poly_file, pickle.DEFAULT_PROTOCOL)
 
         for j in range(len(bldg_polygon)):
             bldg_polygon[j] = ox.projection.project_geometry(bldg_polygon[j])[0]
-            print(bldg_polygon[j])
+            # print(bldg_polygon[j])
 
         with open(os.path.join(fp,'blk_bldg_'+str(ii)), "wb") as poly_file:
             pickle.dump(bldg_polygon, poly_file, pickle.DEFAULT_PROTOCOL)
-
-        # blk_footprint.to_file(os.path.join(fp,'blk_bldg_'+str(ii)+'.geojson'),driver='GeoJSON')
-        # with open(os.path.join(fp,'blk_bldg_'+str(ii))+'.json', 'w') as f:
-        #     f.write(blk_footprint.to_json())
 
         fig, ax = ox.plot_footprints(blk_footprint, filepath=os.path.join(fp,'blk_'+str(ii)+'.png'), dpi=800, save=True, show=False, close=True)
 

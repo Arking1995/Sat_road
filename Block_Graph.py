@@ -46,10 +46,10 @@ class BlockGraph(DiGraph):
                             bldg_type = bldg_type,  bldg_height = bldg_height,
                             road_type = road_type, road_length = road_length)
 
-    def add_obj_edge(self, start_id, end_id, edge_dist, azimuth=None, edge_type=None):
+    def add_obj_edge(self, start_id, end_id, edge_dist, azimuth=None, edge_type=None, included_angle=None):
 
         self.add_edge(start_id, end_id,
-                            edge_dist = edge_dist, azimuth = azimuth, edge_type = edge_type)
+                            edge_dist = edge_dist, azimuth = azimuth, edge_type = edge_type, included_angle = included_angle)
 
 
 
