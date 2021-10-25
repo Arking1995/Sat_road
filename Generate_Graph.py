@@ -20,14 +20,15 @@ directP_dict = {(0,'north'),(1,'south'),(2,'east'),(3,'west')}
 resolution = 0.3
 road_access_threshold = 20.0
 bldg_rela_threshold = 10.0
+thres_mean_size = 5 # also defined in utils.py, they should be the same in case road direction cannot be identified by generate_RoadAccess_EdgeType()
 
 if __name__ == "__main__":
 
-    # fp = 'D:\\Sat_road\\chicago_set_raw'
-    # save_fp = 'D:\\Sat_road\\chicago_dataset'
+    fp = 'D:\\Sat_road\\chicago_set_raw'
+    save_fp = 'D:\\Sat_road\\chicago_dataset'
 
-    fp = 'D:\\Sat_road\\result_newtest\\testblk_cv_chicago_drive'
-    save_fp = 'D:\\Sat_road\\chicago_trivial_dataset'
+    # fp = 'D:\\Sat_road\\result_newtest\\testblk_cv_chicago_drive'
+    # save_fp = 'D:\\Sat_road\\chicago_trivial_dataset'
 
     idx_list = []
     rx = re.compile(r"blk_bldg_*")
@@ -59,12 +60,16 @@ if __name__ == "__main__":
         blk_offset_x = np.float64(loaded_road.centroid.x)
         blk_offset_y = np.float64(loaded_road.centroid.y)
 
+
         ################################ Generate block-level graph attributes
         offset_block = sa.translate(loaded_road, -blk_offset_x, -blk_offset_y)
         blk_bounds = offset_block.bounds
         blk_azumith = get_Block_azumith(offset_block)
         horiz_offset_block = sa.rotate(offset_block, blk_azumith, origin = (0.0, 0.0), use_radians=True)
         blk_area = horiz_offset_block.area
+
+        if blk_bounds[2] - blk_bounds[0] < thres_mean_size or blk_bounds[3] - blk_bounds[1] < thres_mean_size:
+            continue
 
         G = BlockGraph(blockID= ii, offsetx = blk_offset_x , offsety = blk_offset_y, area = blk_area, azimuth = blk_azumith) # initialize the block graph
 

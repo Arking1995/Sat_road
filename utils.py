@@ -41,6 +41,9 @@ def Ecu_dis(x1, y1, x2, y2):
 
 
 
+
+thres_mean_size = 5
+
 def generate_RoadAccess_EdgeType(line_list):
     dict = {}
 
@@ -48,11 +51,12 @@ def generate_RoadAccess_EdgeType(line_list):
     tmp = []
     tmp_idx = -1
 
+
     for i in range(line_vol):
         meany = line_list[i].coords[0][1] + line_list[i].coords[1][1]
         dy = line_list[i].coords[0][1] - line_list[i].coords[1][1]
-        if np.fabs(dy) < 1:
-            if meany > 0:
+        if np.fabs(dy) < thres_mean_size:
+            if meany >= 0:
                 dict['north'] = i
             else:
                 dict['south'] = i
@@ -60,7 +64,7 @@ def generate_RoadAccess_EdgeType(line_list):
 
     for i in range(line_vol):
         dy = line_list[i].coords[0][1] - line_list[i].coords[1][1]
-        if np.fabs(dy) > 1:
+        if np.fabs(dy) > thres_mean_size:
             if not tmp:
                 meanx = line_list[i].coords[0][0] + line_list[i].coords[1][0]
                 tmp.append(meanx)

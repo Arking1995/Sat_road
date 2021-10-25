@@ -43,7 +43,7 @@ bbx = [ [41.9058124, 41.8241064, -87.6209515, -87.7285386],
         [47.5244795, 47.4576584, -122.5890458, -122.7082366],
         [47.5783890, 47.5516808, -122.6275684, -122.6879689],
         [48.2386057, 48.1580527, 16.4240489, 16.3034633] ]
-
+h = 0
 
 colsize = 30
 rowsize = 30
@@ -59,7 +59,7 @@ tags = {"building": True}
 
 
 cityname = ['chicago', 'austin', 'kitsap1', 'kitsap2', 'vienna']    #'chicago', 'austin', 'kitsap', 'vienna'
-h = 1
+
 G = ox.graph_from_bbox(bbx[h][0], bbx[h][1], bbx[h][2], bbx[h][3], network_type='drive')
 
 # G = ox.graph_from_point(point, dist=dist, network_type='drive')
